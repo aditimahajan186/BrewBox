@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrewBox – Brew Match Quiz</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --espresso: #2C1810;
+    --dark-roast: #3B2218;
+    --medium-roast: #6B4226;
+    --caramel: #D4A574;
+    --light-caramel: #E8C9A0;
+    --cream: #F9F3ED;
+    --milk: #FFFBF7;
+    --white: #FFFFFF;
+    --warm-grey: #8B7D72;
+    --text-dark: #1A1410;
+    --text-body: #3D3228;
+    --text-muted: #7A6E63;
+    --green: #4A6741;
+    --green-light: #E8F0E6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--espresso);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  /* Background effects */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(212,165,116,0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba(107,66,38,0.2) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .quiz-container {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    z-index: 1;
+  }
+
+  /* ===== WELCOME SCREEN ===== */
+  .welcome-screen {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(30px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 28px;
+    padding: 56px 48px;
+    text-align: center;
+    animation: fadeUp 0.6s ease-out;
+  }
+
+  .welcome-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 36px;
+    color: var(--white);
+    margin-bottom: 8px;
+  }
+  .welcome-logo span { color: var(--caramel); }
+
+  .welcome-tagline {
+    font-size: 13px;
+    color: var(--caramel);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 40px;
+  }
+
+  .welcome-icon {
+    font-size: 64px;
+    margin-bottom: 24px;
+    display: block;
+  }
+
+  .welcome-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    color: var(--white);
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+  .welcome-title em { color: var(--caramel); font-style: italic; }
+
+  .welcome-desc {
+    font-size: 15px;
+    color: rgba(249,243,237,0.6);
+    line-height: 1.7;
+    max-width: 440px;
+    margin: 0 auto 36px;
+  }
+
+  .welcome-features {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+  .welcome-feature {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: rgba(249,243,237,0.5);
+  }
+  .welcome-feature .icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(212,165,116,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .btn-start {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--caramel);
+    color: var(--espresso);
+    padding: 18px 44px;
+    border-radius: 100px;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 32px rgba(212,165,116,0.3);
+  }
+  .btn-start:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(212,165,116,0.4);
+    background: var(--light-caramel);
+  }
+
+  /* ===== QUIZ SCREEN ===== */
+  .quiz-screen {
+    display: none;
+    background: var(--white);
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.3);
+    animation: fadeUp 0.5s ease-out;
+  }
+
+  /* Progress bar */
+  .progress-bar-container {
+    height: 6px;
+    background: var(--cream);
+    position: relative;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--caramel), var(--medium-roast));
+    border-radius: 0 3px 3px 0;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+  }
+
+  /* Question header */
+  .quiz-header {
+    padding: 32px 48px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .quiz-step {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--caramel);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .quiz-back {
+    background: none;
+    border: none;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s;
+  }
+  .quiz-back:hover { color: var(--espresso); }
+  .quiz-back.hidden { visibility: hidden; }
+
+  /* Question content */
+  .quiz-body {
+    padding: 24px 48px 40px;
+  }
+  .quiz-question {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--espresso);
+    line-height: 1.25;
+    margin-bottom: 8px;
+  }
+  .quiz-hint {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+  }
+
+  /* Options */
+  .options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .option-btn {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    padding: 18px 24px;
+    border: 2px solid #E8E2DC;
+    border-radius: 16px;
+    background: var(--milk);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: left;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .option-btn:hover {
+    border-color: var(--caramel);
+    background: var(--cream);
+    transform: translateX(4px);
+  }
+  .option-btn.selected {
+    border-color: var(--caramel);
+    background: rgba(212,165,116,0.1);
+    box-shadow: 0 0 0 3px rgba(212,165,116,0.15);
+  }
+
+  .option-emoji {
+    font-size: 28px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--white);
+    border-radius: 12px;
+    flex-shrink: 0;
+  }
+  .option-text {
+    flex: 1;
+  }
+  .option-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--espresso);
+    margin-bottom: 2px;
+  }
+  .option-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  .option-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #D5CFC9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    font-size: 12px;
+    color: transparent;
+  }
+  .option-btn.selected .option-check {
+    background: var(--caramel);
+    border-color: var(--caramel);
+    color: var(--white);
+  }
+
+  /* Next button */
+  .quiz-footer {
+    padding: 0 48px 36px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  .btn-next {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--espresso);
+    color: var(--cream);
+    padding: 14px 32px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all 0.3s ease;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  .btn-next.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .btn-next.active:hover {
+    background: var(--dark-roast);
+    transform: translateY(-1px);
+  }
+
+  /* ===== LOADING SCREEN ===== */
+  .loading-screen {
+    display: none;
+    background: var(--espresso);
+    border-radius: 28px;
+    padding: 80px 48px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.08);
+    animation: fadeUp 0.5s ease-out;
+  }
+
+  .loading-spinner {
+    width: 64px;
+    height: 64px;
+    border: 3px solid rgba(212,165,116,0.15);
+    border-top-color: var(--caramel);
+    border-radius: 50%;
+    margin: 0 auto 32px;
+    animation: spin 1s linear infinite;
+  }
+
+  .loading-text {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px;
+    color: var(--white);
+    margin-bottom: 12px;
+  }
+  .loading-sub {
+    font-size: 14px;
+    color: rgba(249,243,237,0.5);
+  }
+  .loading-dots::after {
+    content: '';
+    animation: dots 1.5s steps(4) infinite;
+  }
+
+  /* ===== RESULT SCREEN ===== */
+  .result-screen {
+    display: none;
+    background: var(--white);
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.3);
+    animation: fadeUp 0.6s ease-out;
+  }
+
+  .result-header {
+    background: var(--espresso);
+    padding: 48px 48px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .result-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 100%, rgba(212,165,116,0.15) 0%, transparent 60%);
+  }
+
+  .result-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(212,165,116,0.15);
+    border: 1px solid rgba(212,165,116,0.25);
+    padding: 8px 20px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--caramel);
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .result-emoji {
+    font-size: 72px;
+    display: block;
+    margin-bottom: 20px;
+    position: relative;
+    animation: bounceIn 0.6s ease-out 0.3s both;
+  }
+
+  .result-label {
+    font-size: 13px;
+    color: rgba(249,243,237,0.5);
+    margin-bottom: 8px;
+    position: relative;
+  }
+
+  .result-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 36px;
+    color: var(--white);
+    line-height: 1.2;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .result-name em { color: var(--caramel); font-style: italic; }
+
+  .result-origin {
+    font-size: 14px;
+    color: var(--caramel);
+    font-weight: 600;
+    position: relative;
+  }
+
+  .result-body {
+    padding: 40px 48px;
+  }
+
+  .result-desc {
+    font-size: 15px;
+    color: var(--text-body);
+    line-height: 1.8;
+    margin-bottom: 32px;
+  }
+
+  /* Flavour profile */
+  .profile-section {
+    margin-bottom: 32px;
+  }
+  .profile-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--espresso);
+    margin-bottom: 20px;
+  }
+
+  .profile-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .profile-bar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .profile-bar-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-body);
+    width: 90px;
+    flex-shrink: 0;
+  }
+  .profile-bar-track {
+    flex: 1;
+    height: 10px;
+    background: var(--cream);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .profile-bar-fill {
+    height: 100%;
+    border-radius: 100px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+  }
+  .profile-bar-fill.fruity { background: linear-gradient(90deg, #E8856C, #D4574A); }
+  .profile-bar-fill.chocolate { background: linear-gradient(90deg, var(--caramel), var(--medium-roast)); }
+  .profile-bar-fill.nutty { background: linear-gradient(90deg, #C4A46C, #8B7340); }
+  .profile-bar-fill.floral { background: linear-gradient(90deg, #C88BC4, #9B5D98); }
+  .profile-bar-fill.bold { background: linear-gradient(90deg, #5C4033, #2C1810); }
+  .profile-bar-value {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    width: 35px;
+    text-align: right;
+  }
+
+  /* Brew recommendation */
+  .brew-rec {
+    background: var(--cream);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .brew-rec-icon {
+    font-size: 40px;
+    width: 64px;
+    height: 64px;
+    background: var(--white);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .brew-rec-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--espresso);
+    margin-bottom: 4px;
+  }
+  .brew-rec-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* Match details grid */
+  .match-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .match-card {
+    background: var(--milk);
+    border: 1px solid #E8E2DC;
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .match-card-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--caramel);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .match-card-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--espresso);
+  }
+
+  /* CTA */
+  .result-cta {
+    text-align: center;
+    padding: 8px 0 0;
+  }
+  .btn-subscribe {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--caramel);
+    color: var(--espresso);
+    padding: 18px 44px;
+    border-radius: 100px;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 32px rgba(212,165,116,0.3);
+    margin-bottom: 12px;
+  }
+  .btn-subscribe:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(212,165,116,0.4);
+  }
+
+  .btn-retake {
+    background: none;
+    border: none;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 500;
+    text-decoration: underline;
+    transition: color 0.2s;
+  }
+  .btn-retake:hover { color: var(--espresso); }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes dots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+  }
+  @keyframes bounceIn {
+    0% { opacity: 0; transform: scale(0.3); }
+    50% { transform: scale(1.05); }
+    70% { transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .fade-in { animation: fadeUp 0.4s ease-out; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 640px) {
+    .welcome-screen, .quiz-body, .result-body, .result-header, .loading-screen {
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+    .quiz-header, .quiz-footer { padding-left: 24px; padding-right: 24px; }
+    .quiz-question { font-size: 22px; }
+    .result-name { font-size: 28px; }
+    .welcome-title { font-size: 26px; }
+    .welcome-features { gap: 16px; }
+    .match-grid { grid-template-columns: 1fr; }
+    .brew-rec { flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="quiz-container">
+
+  <!-- WELCOME SCREEN -->
+  <div class="welcome-screen" id="welcomeScreen">
+    <div class="welcome-logo">Brew<span>Box</span></div>
+    <div class="welcome-tagline">Craft Coffee, Personally Matched</div>
+    <span class="welcome-icon">☕</span>
+    <h1 class="welcome-title">Find Your <em>Perfect Bean</em></h1>
+    <p class="welcome-desc">Answer 6 quick questions about your taste, habits, and brewing style. We'll match you to specialty single-origin beans you'll love.</p>
+    <div class="welcome-features">
+      <div class="welcome-feature"><div class="icon">⏱</div> 2 minutes</div>
+      <div class="welcome-feature"><div class="icon">🎯</div> Personalised</div>
+      <div class="welcome-feature"><div class="icon">🌱</div> Ethical beans</div>
+    </div>
+    <button class="btn-start" onclick="startQuiz()">
+      Start the Brew Match Quiz
+      <span>→</span>
+    </button>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div class="quiz-screen" id="quizScreen">
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="quiz-header">
+      <span class="quiz-step" id="quizStep">QUESTION 1 OF 6</span>
+      <button class="quiz-back hidden" id="backBtn" onclick="goBack()">← Back</button>
+    </div>
+    <div class="quiz-body" id="quizBody">
+      <!-- Populated by JS -->
+    </div>
+    <div class="quiz-footer">
+      <button class="btn-next" id="nextBtn" onclick="goNext()">
+        Next <span>→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- LOADING SCREEN -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Brewing Your Results</div>
+    <div class="loading-sub">Matching your palate to our roaster catalogue<span class="loading-dots"></span></div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="result-screen" id="resultScreen">
+    <div class="result-header">
+      <div class="result-badge">☕ Your Brew Match Result</div>
+      <span class="result-emoji" id="resultEmoji"></span>
+      <div class="result-label">We matched you to</div>
+      <h2 class="result-name" id="resultName"></h2>
+      <div class="result-origin" id="resultOrigin"></div>
+    </div>
+    <div class="result-body">
+      <p class="result-desc" id="resultDesc"></p>
+
+      <div class="profile-section">
+        <div class="profile-title">Your Flavour Profile</div>
+        <div class="profile-bars" id="profileBars">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div class="brew-rec" id="brewRec">
+        <div class="brew-rec-icon" id="brewRecIcon"></div>
+        <div>
+          <div class="brew-rec-title" id="brewRecTitle"></div>
+          <div class="brew-rec-text" id="brewRecText"></div>
+        </div>
+      </div>
+
+      <div class="match-grid" id="matchGrid">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="result-cta">
+        <button class="btn-subscribe" onclick="alert('This would link to the BrewBox subscription page!')">
+          Subscribe & Get This Bean 📦
+        </button>
+        <br>
+        <button class="btn-retake" onclick="retakeQuiz()">Retake Quiz</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===== QUIZ DATA =====
+const questions = [
+  {
+    question: "How do you take your coffee?",
+    hint: "Think about your most common daily coffee.",
+    options: [
+      { emoji: "☕", title: "Black — no milk, no sugar", desc: "I want to taste the pure bean", tags: { bold: 3, fruity: 1, chocolate: 1 } },
+      { emoji: "🥛", title: "With a splash of milk", desc: "A flat white or latte style", tags: { chocolate: 2, nutty: 2, bold: 1 } },
+      { emoji: "🍯", title: "Milk and sugar/syrup", desc: "I like it smooth and sweet", tags: { chocolate: 3, nutty: 2 } },
+      { emoji: "🧊", title: "Iced or cold brew", desc: "Cold is the way to go", tags: { fruity: 2, floral: 1, chocolate: 1 } },
+    ]
+  },
+  {
+    question: "Which flavour profile excites you most?",
+    hint: "Not just in coffee — think about food and drinks in general.",
+    options: [
+      { emoji: "🍫", title: "Rich & Chocolatey", desc: "Dark chocolate, caramel, toffee", tags: { chocolate: 4, bold: 1 } },
+      { emoji: "🍒", title: "Bright & Fruity", desc: "Berries, citrus, stone fruit", tags: { fruity: 4, floral: 1 } },
+      { emoji: "🥜", title: "Warm & Nutty", desc: "Almond, hazelnut, toasted grain", tags: { nutty: 4, chocolate: 1 } },
+      { emoji: "🌸", title: "Delicate & Floral", desc: "Jasmine, lavender, tea-like", tags: { floral: 4, fruity: 1 } },
+    ]
+  },
+  {
+    question: "How strong do you like your coffee?",
+    hint: "Think about intensity, not caffeine content.",
+    options: [
+      { emoji: "💪", title: "Bold and intense", desc: "Hit me with everything", tags: { bold: 4, chocolate: 1 } },
+      { emoji: "⚖️", title: "Medium and balanced", desc: "Smooth with some depth", tags: { chocolate: 2, nutty: 2, bold: 1 } },
+      { emoji: "🌿", title: "Light and delicate", desc: "Subtle, clean, easy-drinking", tags: { floral: 2, fruity: 2, nutty: 1 } },
+      { emoji: "🔄", title: "It depends on my mood", desc: "I like variety", tags: { fruity: 1, chocolate: 1, nutty: 1, floral: 1, bold: 1 } },
+    ]
+  },
+  {
+    question: "What's your go-to brewing method?",
+    hint: "Pick the one you use most often at home.",
+    options: [
+      { emoji: "☕", title: "Espresso machine", desc: "Shots, lattes, cappuccinos", tags: { bold: 2, chocolate: 2 }, brew: "espresso" },
+      { emoji: "🫖", title: "Pour-over or filter", desc: "V60, Chemex, drip", tags: { fruity: 2, floral: 2 }, brew: "pourover" },
+      { emoji: "🔵", title: "AeroPress", desc: "Quick, versatile, clean cup", tags: { nutty: 2, fruity: 1, chocolate: 1 }, brew: "aeropress" },
+      { emoji: "🍶", title: "French press / plunger", desc: "Full-bodied and rich", tags: { bold: 2, nutty: 1, chocolate: 1 }, brew: "frenchpress" },
+    ]
+  },
+  {
+    question: "How adventurous are you with coffee?",
+    hint: "Be honest — there's no wrong answer!",
+    options: [
+      { emoji: "🗺️", title: "Very adventurous", desc: "Surprise me with unusual origins and processes", tags: { fruity: 2, floral: 2 } },
+      { emoji: "🤔", title: "Somewhat open", desc: "I'll try new things but like some familiarity", tags: { chocolate: 1, nutty: 1, fruity: 1 } },
+      { emoji: "🏠", title: "I know what I like", desc: "Stick to reliable, crowd-pleasing beans", tags: { chocolate: 2, nutty: 2 } },
+      { emoji: "🌱", title: "I'm a total beginner", desc: "Help me discover what I like!", tags: { chocolate: 1, nutty: 1, bold: 1 } },
+    ]
+  },
+  {
+    question: "How often do you drink coffee?",
+    hint: "This helps us pick the right subscription plan for you.",
+    options: [
+      { emoji: "🔥", title: "3+ cups every day", desc: "Coffee is life", tags: { bold: 2, chocolate: 1 }, freq: "heavy" },
+      { emoji: "☀️", title: "1-2 cups daily", desc: "My morning ritual", tags: { chocolate: 1, nutty: 1 }, freq: "regular" },
+      { emoji: "🌤️", title: "A few times a week", desc: "When I feel like it", tags: { fruity: 1, floral: 1 }, freq: "moderate" },
+      { emoji: "🌙", title: "Weekend treat only", desc: "Quality over quantity", tags: { floral: 1, fruity: 1 }, freq: "light" },
+    ]
+  }
+];
+
+// ===== COFFEE RESULTS DATABASE =====
+const coffeeResults = {
+  fruity: {
+    emoji: "🍒",
+    name: "Ethiopian <em>Yirgacheffe</em>",
+    origin: "Sidamo Region, Ethiopia",
+    desc: "You have a vibrant, adventurous palate! Your ideal match is a natural-process Ethiopian Yirgacheffe — bursting with blueberry, citrus, and jasmine notes. This single-origin gem is light-roasted to preserve its dazzling brightness and complex fruit-forward character. It's like sipping sunshine in a cup.",
+    profile: { fruity: 92, floral: 68, chocolate: 25, nutty: 15, bold: 20 },
+    roast: "Light Roast",
+    process: "Natural / Dry Process",
+    altitude: "1,750–2,200m",
+    taste: "Blueberry, Citrus, Jasmine",
+  },
+  chocolate: {
+    emoji: "🍫",
+    name: "Colombian <em>Huila</em>",
+    origin: "Huila Department, Colombia",
+    desc: "You're a classic at heart with refined taste! Your perfect match is a washed Colombian Huila — rich with dark chocolate, caramel sweetness, and a hint of red apple. Medium-roasted to bring out its velvety body and balanced complexity. This is the bean that converts skeptics into coffee lovers.",
+    profile: { fruity: 35, floral: 20, chocolate: 90, nutty: 55, bold: 50 },
+    roast: "Medium Roast",
+    process: "Washed Process",
+    altitude: "1,500–1,800m",
+    taste: "Dark Chocolate, Caramel, Red Apple",
+  },
+  nutty: {
+    emoji: "🥜",
+    name: "Brazilian <em>Cerrado</em>",
+    origin: "Cerrado Mineiro, Brazil",
+    desc: "You appreciate warmth, comfort, and consistency! Your ideal match is a pulped-natural Brazilian Cerrado — smooth with toasted almond, milk chocolate, and brown sugar sweetness. Medium-roasted for a creamy, full body that's perfect for espresso or any milk-based drink. Reliable, satisfying, and endlessly drinkable.",
+    profile: { fruity: 20, floral: 10, chocolate: 65, nutty: 88, bold: 45 },
+    roast: "Medium Roast",
+    process: "Pulped Natural",
+    altitude: "1,000–1,300m",
+    taste: "Toasted Almond, Milk Chocolate, Brown Sugar",
+  },
+  floral: {
+    emoji: "🌸",
+    name: "Kenyan <em>AA Nyeri</em>",
+    origin: "Nyeri County, Kenya",
+    desc: "You have an incredibly refined and delicate palate! Your match is a washed Kenyan AA from Nyeri — elegant with blackcurrant, hibiscus, and a sparkling grapefruit acidity. Light-roasted to showcase its tea-like clarity and complex aromatic layers. This is specialty coffee at its most graceful.",
+    profile: { fruity: 72, floral: 90, chocolate: 18, nutty: 12, bold: 25 },
+    roast: "Light Roast",
+    process: "Washed / Wet Process",
+    altitude: "1,700–2,000m",
+    taste: "Blackcurrant, Hibiscus, Grapefruit",
+  },
+  bold: {
+    emoji: "🔥",
+    name: "Sumatran <em>Mandheling</em>",
+    origin: "North Sumatra, Indonesia",
+    desc: "You want coffee that commands attention! Your match is a wet-hulled Sumatran Mandheling — earthy, smoky, with deep dark chocolate and cedar wood notes. Dark-roasted for maximum body and a lingering, powerful finish. This is the coffee that makes you close your eyes and say 'yes'.",
+    profile: { fruity: 10, floral: 8, chocolate: 55, nutty: 40, bold: 95 },
+    roast: "Dark Roast",
+    process: "Wet-Hulled (Giling Basah)",
+    altitude: "1,100–1,600m",
+    taste: "Dark Chocolate, Cedar, Smoky Earth",
+  }
+};
+
+const brewMethods = {
+  espresso: { icon: "☕", title: "Best Brewed as Espresso", text: "Use 18g in, 36g out, 25-30 second extraction. This bean shines as a double shot or in a flat white." },
+  pourover: { icon: "🫖", title: "Best as a Pour-Over", text: "Use a V60 or Chemex with 15g coffee to 250ml water at 93°C. Slow circular pours for maximum clarity." },
+  aeropress: { icon: "🔵", title: "Best with AeroPress", text: "Try the inverted method: 17g coffee, 220ml water at 85°C, steep 1:30, then press. Clean and vibrant." },
+  frenchpress: { icon: "🍶", title: "Best in a French Press", text: "Use 30g coarsely ground coffee to 500ml water at 96°C. Steep 4 minutes, plunge slowly. Full-bodied perfection." },
+};
+
+// ===== QUIZ STATE =====
+let currentQuestion = 0;
+let answers = [];
+let selectedOption = null;
+let brewMethod = "pourover";
+
+// ===== FUNCTIONS =====
+function startQuiz() {
+  document.getElementById('welcomeScreen').style.display = 'none';
+  document.getElementById('quizScreen').style.display = 'block';
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = questions[currentQuestion];
+  const body = document.getElementById('quizBody');
+  
+  // Update progress
+  document.getElementById('progressBar').style.width = ((currentQuestion + 1) / questions.length * 100) + '%';
+  document.getElementById('quizStep').textContent = `QUESTION ${currentQuestion + 1} OF ${questions.length}`;
+  
+  // Back button
+  const backBtn = document.getElementById('backBtn');
+  backBtn.classList.toggle('hidden', currentQuestion === 0);
+  
+  // Next button
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.textContent = currentQuestion === questions.length - 1 ? 'See My Results →' : 'Next →';
+  nextBtn.classList.remove('active');
+  selectedOption = answers[currentQuestion] !== undefined ? answers[currentQuestion] : null;
+  if (selectedOption !== null) nextBtn.classList.add('active');
+
+  // Build question
+  let html = `
+    <h2 class="quiz-question fade-in">${q.question}</h2>
+    <p class="quiz-hint fade-in">${q.hint}</p>
+    <div class="options-grid">
+  `;
+
+  q.options.forEach((opt, i) => {
+    const selected = selectedOption === i ? 'selected' : '';
+    html += `
+      <button class="option-btn ${selected} fade-in" style="animation-delay:${i * 0.05}s" onclick="selectOption(${i})">
+        <div class="option-emoji">${opt.emoji}</div>
+        <div class="option-text">
+          <div class="option-title">${opt.title}</div>
+          <div class="option-desc">${opt.desc}</div>
+        </div>
+        <div class="option-check">✓</div>
+      </button>
+    `;
+  });
+
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+function selectOption(index) {
+  selectedOption = index;
+  answers[currentQuestion] = index;
+  
+  // Update UI
+  document.querySelectorAll('.option-btn').forEach((btn, i) => {
+    btn.classList.toggle('selected', i === index);
+  });
+  document.getElementById('nextBtn').classList.add('active');
+
+  // Store brew method if applicable
+  const opt = questions[currentQuestion].options[index];
+  if (opt.brew) brewMethod = opt.brew;
+}
+
+function goNext() {
+  if (selectedOption === null) return;
+  
+  if (currentQuestion < questions.length - 1) {
+    currentQuestion++;
+    selectedOption = answers[currentQuestion] !== undefined ? answers[currentQuestion] : null;
+    renderQuestion();
+  } else {
+    showLoading();
+  }
+}
+
+function goBack() {
+  if (currentQuestion > 0) {
+    currentQuestion--;
+    selectedOption = answers[currentQuestion] !== undefined ? answers[currentQuestion] : null;
+    renderQuestion();
+  }
+}
+
+function showLoading() {
+  document.getElementById('quizScreen').style.display = 'none';
+  document.getElementById('loadingScreen').style.display = 'block';
+  
+  setTimeout(() => {
+    calculateResult();
+  }, 2500);
+}
+
+function calculateResult() {
+  // Tally scores
+  const scores = { fruity: 0, chocolate: 0, nutty: 0, floral: 0, bold: 0 };
+  
+  answers.forEach((ansIndex, qIndex) => {
+    const tags = questions[qIndex].options[ansIndex].tags;
+    for (const [key, value] of Object.entries(tags)) {
+      scores[key] += value;
+    }
+  });
+
+  // Find dominant flavour
+  let topFlavour = 'chocolate';
+  let topScore = 0;
+  for (const [flavour, score] of Object.entries(scores)) {
+    if (score > topScore) {
+      topScore = score;
+      topFlavour = flavour;
+    }
+  }
+
+  const result = coffeeResults[topFlavour];
+  const brew = brewMethods[brewMethod];
+
+  // Populate result screen
+  document.getElementById('resultEmoji').textContent = result.emoji;
+  document.getElementById('resultName').innerHTML = result.name;
+  document.getElementById('resultOrigin').textContent = result.origin;
+  document.getElementById('resultDesc').textContent = result.desc;
+
+  // Flavour profile bars
+  const barsHtml = Object.entries(result.profile).map(([key, val]) => `
+    <div class="profile-bar-item">
+      <div class="profile-bar-label">${key.charAt(0).toUpperCase() + key.slice(1)}</div>
+      <div class="profile-bar-track">
+        <div class="profile-bar-fill ${key}" id="bar-${key}" style="width: 0%"></div>
+      </div>
+      <div class="profile-bar-value">${val}%</div>
+    </div>
+  `).join('');
+  document.getElementById('profileBars').innerHTML = barsHtml;
+
+  // Brew recommendation
+  document.getElementById('brewRecIcon').textContent = brew.icon;
+  document.getElementById('brewRecTitle').textContent = brew.title;
+  document.getElementById('brewRecText').textContent = brew.text;
+
+  // Match details
+  const gridHtml = `
+    <div class="match-card">
+      <div class="match-card-label">ROAST LEVEL</div>
+      <div class="match-card-value">${result.roast}</div>
+    </div>
+    <div class="match-card">
+      <div class="match-card-label">PROCESS</div>
+      <div class="match-card-value">${result.process}</div>
+    </div>
+    <div class="match-card">
+      <div class="match-card-label">ALTITUDE</div>
+      <div class="match-card-value">${result.altitude}</div>
+    </div>
+    <div class="match-card">
+      <div class="match-card-label">TASTING NOTES</div>
+      <div class="match-card-value">${result.taste}</div>
+    </div>
+  `;
+  document.getElementById('matchGrid').innerHTML = gridHtml;
+
+  // Show result
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display = 'block';
+
+  // Animate bars after a short delay
+  setTimeout(() => {
+    Object.entries(result.profile).forEach(([key, val]) => {
+      document.getElementById(`bar-${key}`).style.width = val + '%';
+    });
+  }, 300);
+}
+
+function retakeQuiz() {
+  currentQuestion = 0;
+  answers = [];
+  selectedOption = null;
+  brewMethod = "pourover";
+  
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('welcomeScreen').style.display = 'block';
+}
+</script>
+
+</body>
+</html>
